@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Easy Flash</title>
+    <!-- Favicon: Unified CPU Flash Chip SVG in theme blue #2563eb -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='5' width='14' height='14' rx='2' ry='2' fill='none' stroke='%232563eb' stroke-width='2'/%3E%3Cline x1='9' y1='2' x2='9' y2='5'/%3E%3Cline x1='15' y1='2' x2='15' y2='5'/%3E%3Cline x1='9' y1='19' x2='9' y2='22'/%3E%3Cline x1='15' y1='19' x2='15' y2='22'/%3E%3Cline x1='2' y1='9' x2='5' y2='9'/%3E%3Cline x1='2' y1='15' x2='5' y2='15'/%3E%3Cline x1='19' y1='9' x2='22' y2='9'/%3E%3Cline x1='19' y1='15' x2='22' y2='15'/%3E%3Cpolygon points='13 8 9 12.5 12 12.5 11 16 15 11.5 12 11.5' fill='%232563eb' stroke='none'/%3E%3C/svg%3E" />
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Global App Header -->
+      <header class="global-header">
+        <a href="#/" class="brand" style="text-decoration: none; cursor: pointer;">
+          <!-- Unified CPU Flash Chip Logo SVG -->
+          <svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color); display: inline-block; vertical-align: middle;">
+            <rect x="5" y="5" width="14" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2.2"></rect>
+            <line x1="9" y1="2" x2="9" y2="5"></line>
+            <line x1="15" y1="2" x2="15" y2="5"></line>
+            <line x1="9" y1="19" x2="9" y2="22"></line>
+            <line x1="15" y1="19" x2="15" y2="22"></line>
+            <line x1="2" y1="9" x2="5" y2="9"></line>
+            <line x1="2" y1="15" x2="5" y2="15"></line>
+            <line x1="19" y1="9" x2="22" y2="9"></line>
+            <line x1="19" y1="15" x2="22" y2="15"></line>
+            <polygon points="13 8 9 12.5 12 12.5 11 16 15 11.5 12 11.5" fill="currentColor" stroke="none"></polygon>
+          </svg>
+          <span class="app-name"><span class="app-easy">EASY</span> <span class="app-flash">FLASH</span></span>
+        </a>
+        <button id="header-serial-btn" class="btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle;">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <path d="M6 10l3 3-3 3"></path>
+            <line x1="12" y1="15" x2="18" y2="15"></line>
+          </svg>
+          <span>Serial Monitor</span>
+        </button>
+      </header>
+
+      <!-- Browser Compatibility Alert Banner -->
+      <div id="compat-notice" class="alert alert-error hidden">
+        <div class="alert-title">Browser Unsupported</div>
+        <div>Your browser doesn't support Web Serial. Please use Google Chrome, Microsoft Edge, or another Chromium-based browser to flash ESP32 devices.</div>
+      </div>
+
+      <!-- ================= DASHBOARD VIEW ================= -->
+      <div id="dashboard-view">
+        <div class="welcome-section" style="margin-bottom: 20px;">
+          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary);">Project Dashboard</h2>
+          <p class="subtitle" style="font-size: 14px;">Select a hardware project below to begin flashing firmware.</p>
+        </div>
+
+        <div id="project-cards-grid" class="project-grid">
+          <!-- Dynamically populated via projects.json -->
+        </div>
+      </div>
+
+      <!-- ================= FLASHER VIEW ================= -->
+      <div id="flasher-view" class="hidden">
+        <!-- Header Card (Cover Image set dynamically as Card Background) -->
+        <div class="card project-header-card" id="project-header-card" style="margin-bottom: 20px;">
+          <div style="margin-top: auto;">
+            <h1 id="project-title" style="color: #ffffff; font-size: 26px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.4);">Project Name</h1>
+            <div id="project-desc" class="subtitle" style="color: #f3f4f6; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.4);">Project short description goes here.</div>
+          </div>
+        </div>
+
+        <div class="flasher-layout">
+          <!-- Left Column: Specs / Project Metadata -->
+          <div class="flasher-column-left">
+            <div class="card specs-card">
+              <div class="card-title">Project Specifications</div>
+              
+              <div class="specs-list">
+                <div class="spec-item">
+                  <span class="spec-label">Version</span>
+                  <span class="spec-value" id="fw-version">—</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Compatible Board</span>
+                  <span class="spec-value" id="project-board">—</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Flash Address</span>
+                  <span class="spec-value" id="project-address">—</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Project Documentation</span>
+                  <span class="spec-value" id="project-doc-link">—</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">GitHub Repository</span>
+                  <span class="spec-value" id="project-github-link">—</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Retained hidden elements for DOM compatibility with original app logic -->
+            <div class="card" id="firmware-card" style="display:none;">
+              <div id="fw-file-count">0 Files</div>
+              <div id="fw-date">—</div>
+              <div id="fw-total-size">—</div>
+              <ul id="fw-notes"></ul>
+              <table style="display:none;"><tbody id="fw-files-body"></tbody></table>
+            </div>
+          </div>
+
+          <!-- Right Column: Control Panel -->
+          <div class="flasher-column-right">
+            <!-- Connection Status Card -->
+            <div class="card" id="connection-card">
+              <div class="card-title">USB Connection Status</div>
+              
+              <div class="conn-row">
+                <div class="conn-status-badge">
+                  <div class="status-dot disconnected" id="conn-status-dot"></div>
+                  <span id="conn-status-text">Disconnected</span>
+                  <span style="color: var(--text-muted); margin-left: 8px;">Chip:</span>
+                  <span id="chip-name" style="font-weight: 600;">None detected</span>
+                </div>
+
+                <div class="conn-actions">
+                  <label for="baud-rate" style="font-size: 13px; color: var(--text-secondary);">Baud Rate:</label>
+                  <select id="baud-rate">
+                    <option value="115200">115200</option>
+                    <option value="230400">230400</option>
+                    <option value="460800">460800</option>
+                    <option value="921600" selected>921600 (Default)</option>
+                  </select>
+                  <button id="disconnect-btn" class="btn hidden" style="padding: 6px 12px; font-size: 13px;">Disconnect</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Button & Inline Progress Container -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button id="flash-btn" class="btn btn-primary btn-large">Connect &amp; Flash</button>
+              
+              <!-- Inline Progress Bar (Visible only when flashing, styled via styles.css) -->
+              <div id="progress-container-inline" class="hidden">
+                <div class="progress-labels">
+                  <span class="progress-title">Flashing firmware...</span>
+                  <span id="progress-percent" class="progress-percentage">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error Card (Hidden initially) -->
+            <div class="card result-card alert alert-error hidden" id="error-card" style="border-radius: 12px; padding: 32px; background-color: #ffffff;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: var(--error-color); margin-bottom: 12px; display: inline-block;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <div class="result-title" style="color: #b91c1c;">Flash Failed</div>
+              <div class="result-text" id="error-message" style="color: #b91c1c; margin-bottom: 24px;">
+                Failed to establish communication with the ESP32 device. Ensure the USB cable is fully plugged in and the selected port is not in use.
+              </div>
+              <button id="error-retry-btn" class="btn" style="border-color: #fca5a5; background-color: #fef2f2; color: #b91c1c;">Retry</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standalone Flash Logs Card with macOS Terminal Frame Theme -->
+        <div class="card console-card" id="console-card" style="margin-top: 20px; padding: 0 !important; overflow: hidden; border-radius: 8px;">
+          <div class="console-header" style="background-color: #faf9f6; padding: 8px 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border-color);">
+            <!-- macOS Traffic light dots -->
+            <div style="display: flex; gap: 6px; margin-right: 12px; align-items: center;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #ff5f56; display: inline-block; box-shadow: inset 0 0 1px rgba(0,0,0,0.2);"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #ffbd2e; display: inline-block; box-shadow: inset 0 0 1px rgba(0,0,0,0.2);"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #27c93f; display: inline-block; box-shadow: inset 0 0 1px rgba(0,0,0,0.2);"></span>
+            </div>
+            <span style="font-weight: 600; font-size: 13px; color: var(--text-secondary); font-family: -apple-system, BlinkMacSystemFont, sans-serif;">Flash Logs</span>
+            
+            <div class="console-actions" style="margin-left: auto; display: flex; gap: 8px;">
+              <button id="console-toggle" class="icon-btn" title="Toggle Logs" style="background: transparent; border: none; width: 24px; height: 24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+              <button id="copy-logs-btn" class="icon-btn" title="Copy to Clipboard" style="background: transparent; border: none; width: 24px; height: 24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+              <button id="clear-logs-btn" class="icon-btn" title="Clear logs" style="background: transparent; border: none; width: 24px; height: 24px;">
+                <!-- Clean SVG Trash Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="console-log-body">
+            <textarea id="console-log-area" class="console-textarea" style="height: 140px; border: none; border-radius: 0; background-color: #1e1e24 !important; color: #f8fafc !important;" readonly placeholder="Flash logs will appear here..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Footer with Links -->
+      <footer class="app-footer">
+        <span>&copy; 2026 <a href="https://www.makerbrains.com" target="_blank" class="footer-link">Maker Brains</a>. All rights reserved.</span>
+        <span>Made with <span class="heart">💖</span> by <a href="https://www.linkedin.com/in/mukeshsankhla/" target="_blank" class="footer-link">Mukesh Sankhla</a></span>
+      </footer>
+    </div>
+
+    <!-- Global Serial Monitor Popup Modal Overlay with Clean macOS terminal window layout -->
+    <div id="serial-modal" class="modal-overlay hidden">
+      <div class="modal-card" style="border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);">
+        <!-- Modal Header with macOS buttons layout -->
+        <div class="modal-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: #faf9f6; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+          <div style="display: flex; align-items: center;">
+            <!-- macOS Traffic light dots -->
+            <div style="display: flex; gap: 6px; margin-right: 12px; align-items: center;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #ff5f56; display: inline-block; box-shadow: inset 0 0 1px rgba(0,0,0,0.2);"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #ffbd2e; display: inline-block; box-shadow: inset 0 0 1px rgba(0,0,0,0.2);"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #27c93f; display: inline-block; box-shadow: inset 0 0 1px rgba(0,0,0,0.2);"></span>
+            </div>
+            <span class="modal-title" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); font-family: -apple-system, BlinkMacSystemFont, sans-serif;">Web Serial Monitor</span>
+          </div>
+          <button id="close-serial-modal-btn" class="icon-btn btn-close-modal" title="Close Monitor" style="width: 24px; height: 24px; border-radius: 50%;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Serial Monitor Configuration Toolbar -->
+        <div class="modal-toolbar" style="padding: 10px 20px; border-bottom: 1px solid var(--border-color); background-color: var(--border-light); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <!-- Left: Connection state toggles -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="modal-connect-btn" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6-5c1.66 0 3 1.34 3 3v2H9V6c0-1.66 1.34-3 3-3z"></path>
+              </svg>
+              <span>Connect</span>
+            </button>
+            <select id="modal-baud-rate" style="padding: 5px 10px; font-size: 12px; border-radius: 6px; background-color: #ffffff; color: var(--text-primary); border: 1px solid var(--border-color); outline: none; cursor: pointer;">
+              <option value="115200">115200</option>
+              <option value="230400">230400</option>
+              <option value="460800">460800</option>
+              <option value="921600" selected>921600</option>
+            </select>
+          </div>
+          
+          <!-- Right: Autoscroll and output configurations -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label style="font-size: 12px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+              <input type="checkbox" id="serial-autoscroll" checked style="accent-color: var(--accent-color);" /> Auto Scroll
+            </label>
+            <select id="serial-line-ending" style="padding: 5px 10px; font-size: 12px; border-radius: 6px; background-color: #ffffff; color: var(--text-primary); border: 1px solid var(--border-color); outline: none; cursor: pointer;">
+              <option value="none">No Ending</option>
+              <option value="NL" selected>Newline (\n)</option>
+              <option value="CR">CR (\r)</option>
+              <option value="NLCR">Both (\r\n)</option>
+            </select>
+            <div style="width: 1px; height: 18px; background-color: var(--border-color);"></div>
+            <button id="clear-serial-btn" class="icon-btn" title="Clear console">
+              <!-- Clean SVG Trash Icon -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+            <button id="copy-serial-btn" class="icon-btn" title="Copy output">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-body" style="padding: 16px 20px;">
+          <!-- Color styled Pre/Div element for multi-colored Rx/Tx rows -->
+          <div id="serial-rx-area" class="console-textarea" style="height: 240px; overflow-y: auto; font-family: var(--font-mono); font-size: 13px; padding: 14px 18px; border-radius: 8px; white-space: pre-wrap; word-break: break-all;"></div>
+          
+          <div class="serial-tx-bar" style="display: flex; gap: 10px; margin-top: 12px; align-items: center;">
+            <input type="text" id="serial-tx-input" placeholder="Type command to send (Tx) and press Enter..." style="flex-grow: 1; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-mono); font-size: 13px; background-color: #ffffff; color: var(--text-primary); outline: none;" />
+            <button id="serial-tx-btn" class="btn btn-primary" style="padding: 10px 20px;">Send</button>
+          </div>
+
+          <!-- Board Details Bar (Pill tag styling instead of blue card banner) -->
+          <div id="modal-board-details" class="hidden" style="display: flex; gap: 8px; margin-top: 14px; font-size: 11px; justify-content: flex-start; align-items: center; flex-wrap: wrap;">
+            <span class="board-tag">Chip: <strong id="modal-board-chip">—</strong></span>
+            <span class="board-tag">MAC Address: <strong id="modal-board-mac">—</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flash Success Popup Modal Overlay -->
+    <div id="success-modal" class="modal-overlay hidden">
+      <div class="modal-card" style="max-width: 480px; text-align: center; align-items: center; padding: 32px; gap: 12px;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success-color); margin-bottom: 12px; display: inline-block;">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <div class="result-title" style="font-size: 20px; font-weight: 700;">Firmware Updated Successfully</div>
+        <div class="result-text" style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+          Easy Flash has successfully written all firmware files to the ESP32 memory and reset the hardware board. 
+          Your device is now running version <strong id="success-version">v1.2.4</strong>.
+        </div>
+        <button id="close-success-btn" class="btn btn-success" style="padding: 10px 24px; font-size: 14px; width: 100%;">Done</button>
+      </div>
+    </div>
+
+    <!-- Main Module Script -->
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

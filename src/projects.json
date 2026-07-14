@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ai-buddy",
+    "title": "AI Buddy",
+    "description": "AI Buddy voice assistant firmware.\n* Enables \"smart\" voice assistant features\n* Uses \"raw.githubusercontent.com\" for browser flashing CORS compatibility\n* Perfect for \"DIY\" kids companion bots",
+    "version": "v2.1.0",
+    "releaseDate": "July 2026",
+    "coverImage": "https://github.com/MukeshSankhla/AI-Buddy/blob/main/images/Cover.png",
+    "docLink": "https://www.hackster.io/Mukesh_Sankhla",
+    "githubLink": "https://github.com/MukeshSankhla/AI-Buddy",
+    "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/AI-Buddy/main/xiaozhi_v2.1.0.bin",
+    "flashAddress": "0x00",
+    "compatibleBoard": "ESP32-S3"
+  }
+]
