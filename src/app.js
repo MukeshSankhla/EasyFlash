@@ -6,7 +6,8 @@ import { logger } from "./logger.js";
 import { downloader } from "./downloader.js";
 import { serial } from "./serial.js";
 import { flasher } from "./flasher.js";
-import { ui } from "./ui.js";
+import { ui, getProjectFirmwares } from "./ui.js";
+import { incrementProjectFlashCount } from "./firebase.js";
 
 // Application State
 let appState = {
@@ -18,6 +19,7 @@ let appState = {
   downloadedData: {}, // Cache downloaded binary arrays: { url: Uint8Array }
   currentProjectId: null,
   currentProject: null,
+  selectedFirmwareIndex: 0,
   
   // Serial Monitor State
   serialMonitorActive: false,
@@ -29,15 +31,65 @@ let appState = {
   }
 };
 
+// Base path on GitHub Pages
+const BASE_PATH = "/EasyFlash";
+
+/**
+ * Clean path routing navigator using HTML5 History API.
+ */
+export function navigateTo(targetPath) {
+  let cleanTarget = targetPath.startsWith("/") ? targetPath : "/" + targetPath;
+  let fullPath = (BASE_PATH + cleanTarget).replace(/\/+/g, "/");
+  
+  if (window.location.pathname !== fullPath) {
+    window.history.pushState(null, "", fullPath);
+  }
+  handleRouting();
+}
+
+/**
+ * Extracts normalized clean route path from URL (supporting Clean Paths, Query Params, and Hash fallback).
+ */
+function getRoutePath() {
+  const pathname = window.location.pathname;
+  let relPath = pathname;
+  
+  if (relPath.toLowerCase().startsWith(BASE_PATH.toLowerCase())) {
+    relPath = relPath.slice(BASE_PATH.length);
+  }
+  if (!relPath.startsWith("/")) {
+    relPath = "/" + relPath;
+  }
+  // Trim trailing slash unless root
+  if (relPath.length > 1 && relPath.endsWith("/")) {
+    relPath = relPath.slice(0, -1);
+  }
+
+  // Check query param fallback (?project=ai-buddy)
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("project")) {
+    return `/project/${params.get("project")}`;
+  }
+
+  // Check legacy hash fallback (#/project/ai-buddy)
+  if (window.location.hash.startsWith("#/")) {
+    return window.location.hash.slice(1);
+  }
+
+  return relPath;
+}
+
 // Initialize App
 window.addEventListener("DOMContentLoaded", () => {
-  // Initialize UI DOM references
+  // Initialize UI DOM references and router connection
   ui.init();
+  ui.onNavigate = navigateTo;
   
   // Route to initial page view
   handleRouting();
 
-  // Listen for hash route updates
+  // Listen for browser back/forward and hash changes
+  window.addEventListener("popstate", handleRouting);
   window.addEventListener("hashchange", handleRouting);
   
   // Check browser Web Serial support
@@ -71,11 +123,11 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Handles browser hash-based routing.
+ * Universal Route Handler (Clean Path routing).
  */
 function handleRouting() {
-  const hash = window.location.hash;
-  const projectMatch = hash.match(/^#\/project\/([a-zA-Z0-9_-]+)$/);
+  const routePath = getRoutePath();
+  const projectMatch = routePath.match(/^\/project\/([a-zA-Z0-9_-]+)$/i);
   
   if (projectMatch) {
     const projectId = projectMatch[1];
@@ -84,9 +136,10 @@ function handleRouting() {
     if (project) {
       appState.currentProjectId = projectId;
       appState.currentProject = project;
+      appState.selectedFirmwareIndex = 0;
       
       ui.hideOverlays();
-      ui.renderProjectPage(project);
+      ui.renderProjectPage(project, 0);
       ui.showView("flasher");
       resetFileStatuses();
       
@@ -94,28 +147,32 @@ function handleRouting() {
       if (serial.isConnected()) {
         startSerialMonitor();
       }
-    } else {
-      window.location.hash = "#/";
+      return;
     }
-  } else {
-    // Default dashboard state
-    appState.currentProjectId = null;
-    appState.currentProject = null;
-    ui.showView("dashboard");
   }
+
+  // Default dashboard state
+  appState.currentProjectId = null;
+  appState.currentProject = null;
+  appState.selectedFirmwareIndex = 0;
+  ui.showView("dashboard");
 }
 
 /**
- * Resets file statuses to initial 'Pending' state.
+ * Resets file statuses to initial 'Pending' state for the currently active firmware build.
  */
 function resetFileStatuses() {
   if (!appState.currentProject) return;
 
+  const firmwares = getProjectFirmwares(appState.currentProject);
+  const activeFw = firmwares[appState.selectedFirmwareIndex] || firmwares[0];
+  if (!activeFw) return;
+
   const files = [
     {
-      name: `${appState.currentProject.title} Firmware`,
-      address: appState.currentProject.flashAddress,
-      url: appState.currentProject.firmwareUrl
+      name: activeFw.name || `${appState.currentProject.title} (${activeFw.version})`,
+      address: activeFw.flashAddress || appState.currentProject.flashAddress || "0x00",
+      url: activeFw.firmwareUrl
     }
   ];
 
@@ -123,7 +180,7 @@ function resetFileStatuses() {
     state: "Pending",
     sizeLabel: "—"
   }));
-  ui.renderFilesTable(appState.fileStatuses);
+  ui.renderFilesTable(appState.fileStatuses, activeFw);
 }
 
 /**
@@ -272,12 +329,14 @@ async function handleFlashAction() {
     // Connect first, then flash automatically
     try {
       ui.setConnectionState("connecting");
+      ui.setFlowStage("connecting", { text: "Requesting Web Serial Port...", sub: "Browser device selection" });
       
       // Request Port (will prompt browser dialog)
       await serial.requestPort();
       
       // Get selected baud rate
       const baudVal = parseInt(ui.elements.baudRate.value, 10) || 921600;
+      ui.setFlowStage("connecting", { text: "Connecting to ESP32 device...", sub: `Baud rate: ${baudVal}` });
       
       // Connect to device
       const connectionInfo = await serial.connectDevice(baudVal, handleDeviceLost);
@@ -299,6 +358,7 @@ async function handleFlashAction() {
       appState.connection = "disconnected";
       appState.chipName = "";
       ui.setConnectionState("disconnected");
+      ui.setFlowStage("error");
       
       let errMsg = error.message;
       if (errMsg.includes("Permission Denied")) {
@@ -368,6 +428,18 @@ async function handleModalConnectToggle() {
 function bindEvents() {
   const el = ui.elements;
   
+  // Firmware Version Selection Dropdown
+  if (el.fwVersionSelect) {
+    el.fwVersionSelect.addEventListener("change", (e) => {
+      const newIndex = parseInt(e.target.value, 10) || 0;
+      appState.selectedFirmwareIndex = newIndex;
+      if (appState.currentProject) {
+        ui.updateSelectedFirmwareUI(appState.currentProject, newIndex);
+        resetFileStatuses();
+      }
+    });
+  }
+
   // Combined Connect & Flash Button
   if (el.flashBtn) {
     el.flashBtn.addEventListener("click", handleFlashAction);
@@ -424,6 +496,24 @@ function bindEvents() {
     });
   }
 
+  // Brand Link navigation (Return to dashboard without hash)
+  const brandLink = document.getElementById("brand-link");
+  if (brandLink) {
+    brandLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("/");
+    });
+  }
+
+  // Back Link navigation
+  const backLink = document.getElementById("back-link");
+  if (backLink) {
+    backLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("/");
+    });
+  }
+
   // Header Serial Monitor Popup Button
   if (el.headerSerialBtn) {
     el.headerSerialBtn.addEventListener("click", () => {
@@ -454,10 +544,17 @@ function bindEvents() {
 
   // Close success modal when clicking backdrop
   const successModal = document.getElementById("success-modal");
+  const handleSuccessClose = () => {
+    ui.hideOverlays();
+    ui.setFlowStage("idle");
+    ui.setProgressVisible(false);
+    resetFileStatuses();
+  };
+
   if (successModal) {
     successModal.addEventListener("click", (e) => {
       if (e.target === successModal) {
-        ui.hideOverlays();
+        handleSuccessClose();
       }
     });
   }
@@ -465,10 +562,7 @@ function bindEvents() {
   // Flash Success Modal: Done button
   const closeSuccessBtn = document.getElementById("close-success-btn");
   if (closeSuccessBtn) {
-    closeSuccessBtn.addEventListener("click", () => {
-      ui.hideOverlays();
-      resetFileStatuses();
-    });
+    closeSuccessBtn.addEventListener("click", handleSuccessClose);
   }
 
   // Serial Monitor: Send Tx Button
@@ -540,7 +634,7 @@ function handleDeviceLost() {
 }
 
 /**
- * Orchestrates the sequential download-and-flash procedure.
+ * Orchestrates the sequential download-and-flash procedure for the selected firmware build.
  */
 async function startFlashingSequence() {
   const esploader = serial.getLoader();
@@ -554,6 +648,13 @@ async function startFlashingSequence() {
     return;
   }
 
+  const firmwares = getProjectFirmwares(appState.currentProject);
+  const activeFw = firmwares[appState.selectedFirmwareIndex] || firmwares[0];
+  if (!activeFw) {
+    ui.showError("No valid firmware configuration found for this project.");
+    return;
+  }
+
   // Stop serial monitor reader to release port lock so esploader can write
   stopSerialMonitor();
   // Wait for monitor poll interval to fully stop
@@ -561,9 +662,9 @@ async function startFlashingSequence() {
   
   const files = [
     {
-      name: `${appState.currentProject.title} Firmware`,
-      address: appState.currentProject.flashAddress,
-      url: appState.currentProject.firmwareUrl
+      name: activeFw.name || `${appState.currentProject.title} (${activeFw.version})`,
+      address: activeFw.flashAddress || appState.currentProject.flashAddress || "0x00",
+      url: activeFw.firmwareUrl
     }
   ];
 
@@ -578,10 +679,16 @@ async function startFlashingSequence() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       
-      // Step 1: Downloading
+      // Step 1: Downloading Stage
       logger.log(`[File ${i+1}/${files.length}] Downloading ${file.name}...`);
       appState.fileStatuses[i].state = "Downloading...";
-      ui.renderFilesTable(appState.fileStatuses);
+      ui.renderFilesTable(appState.fileStatuses, activeFw);
+      ui.setFlowStage("downloading", {
+        targetName: file.name,
+        text: `Downloading firmware binary (0%)...`,
+        sub: `Connecting to remote repository...`
+      });
+      ui.setProgress(0, "Downloading firmware binary (0%)...", "Connecting to repository...");
       
       let binaryData = appState.downloadedData[file.url];
       
@@ -589,56 +696,81 @@ async function startFlashingSequence() {
         try {
           binaryData = await downloader.downloadFile(file.url, (downloaded, total) => {
             let percent = 0;
-            let percentText = "";
+            let subText = "Downloading...";
             if (total > 0) {
-              percent = (downloaded / total) * 100;
-              percentText = `(${Math.round(percent)}%)`;
+              percent = Math.min(100, Math.round((downloaded / total) * 100));
+              subText = `${ui.formatBytes(downloaded)} of ${ui.formatBytes(total)}`;
             }
-            ui.setProgress(percent, "");
-            appState.fileStatuses[i].state = `Downloading ${percentText}`;
-            ui.renderFilesTable(appState.fileStatuses);
+            ui.setProgress(percent, `Downloading firmware (${percent}%)...`, subText);
+            appState.fileStatuses[i].state = `Downloading (${percent}%)`;
+            ui.renderFilesTable(appState.fileStatuses, activeFw);
           });
           
           // Cache data so we don't redownload on subsequent flash retries
           appState.downloadedData[file.url] = binaryData;
         } catch (dlError) {
           appState.fileStatuses[i].state = "Failed";
-          ui.renderFilesTable(appState.fileStatuses);
+          ui.renderFilesTable(appState.fileStatuses, activeFw);
+          ui.setFlowStage("error");
           throw new Error(`Failed to download firmware file (${file.name}): ${dlError.message}`);
         }
       } else {
         logger.log("Using cached binary.");
+        ui.setProgress(100, "Firmware binary ready (cached)", ui.formatBytes(binaryData.length));
       }
       
       totalFirmwareBytes += binaryData.length;
       appState.fileStatuses[i].sizeLabel = ui.formatBytes(binaryData.length);
       appState.fileStatuses[i].state = "Downloaded";
-      ui.renderFilesTable(appState.fileStatuses);
+      ui.renderFilesTable(appState.fileStatuses, activeFw);
       
-      // Step 2: Flashing
-      ui.setProgress(0, "");
+      // Step 2: Flashing Stage (0% -> 100% accurate write progress)
+      ui.setFlowStage("flashing", {
+        targetName: file.name,
+        text: `Flashing to ${file.address} (0%)...`,
+        sub: `Binary size: ${ui.formatBytes(binaryData.length)}`
+      });
+      ui.setProgress(0, `Flashing to ${file.address} (0%)...`, `Size: ${ui.formatBytes(binaryData.length)}`);
       appState.fileStatuses[i].state = "Flashing...";
-      ui.renderFilesTable(appState.fileStatuses);
+      ui.renderFilesTable(appState.fileStatuses, activeFw);
       
       try {
-        await flasher.flashFile(esploader, binaryData, file.address, (written, total) => {
-          let percent = 0;
-          let percentText = "";
-          if (total > 0) {
-            percent = (written / total) * 100;
-            percentText = `(${Math.round(percent)}%)`;
+        await flasher.flashFile(
+          esploader,
+          binaryData,
+          file.address,
+          (written, total) => {
+            let percent = 0;
+            let subText = "Writing memory...";
+            if (total > 0) {
+              percent = Math.min(100, Math.round((written / total) * 100));
+              subText = `${ui.formatBytes(written)} of ${ui.formatBytes(total)} at ${file.address}`;
+            }
+            if (percent < 99) {
+              ui.setProgress(percent, `Flashing to ${file.address} (${percent}%)...`, subText);
+              appState.fileStatuses[i].state = `Flashing (${percent}%)`;
+              ui.renderFilesTable(appState.fileStatuses, activeFw);
+            }
+          },
+          () => {
+            // Triggered the exact moment all binary blocks are written and ESP32 hardware MD5 check begins
+            logger.log("Write completed. Verifying flash integrity (MD5 Checksum)...");
+            appState.fileStatuses[i].state = "Verifying...";
+            ui.renderFilesTable(appState.fileStatuses, activeFw);
+            ui.setFlowStage("verifying", {
+              text: "Verifying flash integrity (MD5 Checksum)...",
+              sub: `Validating written ${ui.formatBytes(binaryData.length)} at ${file.address}...`
+            });
           }
-          ui.setProgress(percent, "");
-          appState.fileStatuses[i].state = `Flashing ${percentText}`;
-          ui.renderFilesTable(appState.fileStatuses);
-        });
+        );
         
         appState.fileStatuses[i].state = "Verified";
-        ui.renderFilesTable(appState.fileStatuses);
+        ui.renderFilesTable(appState.fileStatuses, activeFw);
         
       } catch (flashError) {
         appState.fileStatuses[i].state = "Failed";
-        ui.renderFilesTable(appState.fileStatuses);
+        ui.renderFilesTable(appState.fileStatuses, activeFw);
+        ui.setFlowStage("error");
         throw flashError;
       }
     }
@@ -646,13 +778,35 @@ async function startFlashingSequence() {
     // Complete download size update
     ui.updateTotalSize(totalFirmwareBytes);
     
-    // Step 3: Device Reboot
-    ui.setProgress(90, "");
+    // Brief pause to allow the user to see the successful verification result
+    ui.setFlowStage("verifying", {
+      text: "Flash checksum verified successfully!",
+      sub: "All memory blocks validated."
+    });
+    await new Promise(r => setTimeout(r, 600));
+
+    // Step 4: Device Reboot Stage
+    ui.setFlowStage("rebooting", {
+      text: "Executing hardware reset & booting firmware...",
+      sub: "Toggling EN / DTR reset pins"
+    });
     await flasher.resetDevice(esploader);
+    await new Promise(r => setTimeout(r, 500));
     
-    ui.setProgress(100, "");
-    logger.log("Flash completed successfully.");
+    // Step 5: Completed Stage
+    ui.setFlowStage("completed");
+    logger.log("Flash completed and verified successfully.");
     
+    // Record successful flash count in Firebase Firestore
+    let updatedFlashCount = null;
+    try {
+      logger.log(`Recording successful flash milestone for ${appState.currentProject.title}...`);
+      updatedFlashCount = await incrementProjectFlashCount(appState.currentProject.id, activeFw.version);
+      logger.log(`Live flash count for ${appState.currentProject.title}: ${updatedFlashCount}`);
+    } catch (countError) {
+      console.warn("Failed to record flash count:", countError);
+    }
+
     // Restart serial monitor reader loop
     if (serial.isConnected()) {
       startSerialMonitor();
@@ -660,15 +814,14 @@ async function startFlashingSequence() {
     
     // Smooth transition to Success Screen
     setTimeout(() => {
-      ui.setProgressVisible(false);
       ui.setFlashingState(false);
-      ui.showSuccess(appState.currentProject.version);
+      ui.showSuccess(activeFw.version);
       appState.isFlashing = false;
     }, 1000);
     
   } catch (error) {
     logger.error(`Flash process aborted: ${error.message}`);
-    ui.setProgressVisible(false);
+    ui.setFlowStage("error");
     ui.setFlashingState(false);
     ui.showError(error.message);
     appState.isFlashing = false;

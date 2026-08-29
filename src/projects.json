@@ -2,40 +2,49 @@
   {
     "id": "ai-buddy",
     "title": "AI Buddy",
-    "description": "AI Buddy voice assistant firmware.\n* Enables \"smart\" voice assistant features\n* Uses \"raw.githubusercontent.com\" for browser flashing CORS compatibility\n* Perfect for \"DIY\" kids companion bots",
-    "version": "v2.1.0",
-    "releaseDate": "July 2026",
+    "publishDate": "July 2026",
+    "description": "AI Buddy voice assistant firmware for interactive ESP32-S3 desktop robots with wake word detection and cloud LLM conversation support.",
     "coverImage": "https://github.com/MukeshSankhla/AI-Buddy/blob/main/images/Cover.png",
-    "docLink": "https://www.hackster.io/Mukesh_Sankhla",
+    "docLink": "https://www.hackster.io/Mukesh_Sankhla/build-an-open-source-ai-buddy-a-diy-ai-companion-for-kids-3f0e49",
     "githubLink": "https://github.com/MukeshSankhla/AI-Buddy",
-    "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/AI-Buddy/main/xiaozhi_v2.1.0.bin",
-    "flashAddress": "0x00",
-    "compatibleBoard": "ESP32-S3"
+    "compatibleBoard": "ESP32-S3",
+    "firmwares": [
+      {
+        "version": "v2.1.0",
+        "name": "AI Buddy Voice Assistant (Latest)",
+        "releaseDate": "July 2026",
+        "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/AI-Buddy/main/xiaozhi_v2.1.0.bin",
+        "flashAddress": "0x00",
+        "versionNote": "Optimized wake word detection with 40% fewer false positives, low-latency OPUS streaming, and improved Wi-Fi provisioning."
+      }
+    ]
   },
   {
-    "id": "esp32-p4-animation-display",
-    "title": "ESP32-P4 PC Display — Animation Player",
-    "description": "Smart PC cabinet display firmware for the FireBeetle 2 ESP32-P4.\n* Drives an 8.8\" IPS bar display at 1920×480 resolution\n* Plays animation videos from an SD card using MJPEG playback\n* Supports smooth video playback at up to 24 FPS\n* Designed for animations and visual effects inside a PC cabinet\n* Uses the ESP32-P4 for standalone display and multimedia processing",
-    "version": "v1.0.0",
-    "releaseDate": "Aug 2026",
+    "id": "esp32-p4-display",
+    "title": "ESP32-P4 PC Display",
+    "publishDate": "August 2026",
+    "description": "Smart PC cabinet display firmware for FireBeetle 2 ESP32-P4, driving 8.8\" IPS 1920×480 bar displays for animations and live telemetry HUD.",
     "coverImage": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/images/DIY.gif",
     "docLink": "https://www.hackster.io/Mukesh_Sankhla/build-a-smart-pc-display-with-esp32-p4-cad12c",
     "githubLink": "https://github.com/MukeshSankhla/ESP32_P4_DSI",
-    "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/firmware/02_sd_mjpeg_player_merged.bin",
-    "flashAddress": "0x00",
-    "compatibleBoard": "FireBeetle 2 ESP32-P4"
-  },
-  {
-    "id": "esp32-p4-telemetry-hud",
-    "title": "ESP32-P4 PC Display — Telemetry HUD",
-    "description": "Smart PC cabinet display firmware for the FireBeetle 2 ESP32-P4.\n* Drives an 8.8\" IPS bar display at 1920×480 resolution\n* Plays animation videos from an SD card using MJPEG playback\n* Displays real-time telemetry and system information alongside animations\n* Designed for PC builds with CPU/GPU usage, temperatures, clocks, and custom dashboard data\n* Combines multimedia playback with a dynamic telemetry HUD\n* Uses the ESP32-P4 for standalone display and multimedia processing",
-    "version": "v1.0.0",
-    "releaseDate": "Aug 2026",
-    "coverImage": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/images/DIY.gif",
-    "docLink": "https://www.hackster.io/Mukesh_Sankhla/build-a-smart-pc-display-with-esp32-p4-cad12c",
-    "githubLink": "https://github.com/MukeshSankhla/ESP32_P4_DSI",
-    "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/firmware/03_sd_mjpeg_telemetry_hud_merged.bin",
-    "flashAddress": "0x00",
-    "compatibleBoard": "FireBeetle 2 ESP32-P4"
+    "compatibleBoard": "FireBeetle 2 ESP32-P4",
+    "firmwares": [
+      {
+        "version": "v1.1.0",
+        "name": "Telemetry HUD Edition",
+        "releaseDate": "Aug 2026",
+        "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/firmware/03_sd_mjpeg_telemetry_hud_merged.bin",
+        "flashAddress": "0x00",
+        "versionNote": "Real-time PC CPU/GPU stats overlay with background MJPEG animation video loops and USB-C serial streaming."
+      },
+      {
+        "version": "v1.0.0",
+        "name": "Animation Player Edition",
+        "releaseDate": "Aug 2026",
+        "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/firmware/02_sd_mjpeg_player_merged.bin",
+        "flashAddress": "0x00",
+        "versionNote": "Hardware-accelerated 24 FPS MJPEG video playback from SD card with automatic looping and PWM backlight dimming."
+      }
+    ]
   }
 ]

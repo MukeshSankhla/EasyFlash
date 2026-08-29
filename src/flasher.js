@@ -12,7 +12,7 @@ export const flasher = {
    * @param {function} onProgress - Progress callback receiving (writtenBytes, totalBytes).
    * @returns {Promise<void>}
    */
-  async flashFile(esploader, data, address, onProgress) {
+  async flashFile(esploader, data, address, onProgress, onVerify) {
     // Convert hex string to integer if necessary
     const addrVal = typeof address === "string" ? parseInt(address, 16) : address;
     
@@ -21,6 +21,36 @@ export const flasher = {
     }
 
     logger.log(`Preparing to write flash at address ${address}...`);
+
+    let isVerifyingTriggered = false;
+
+    const triggerVerifyOnce = () => {
+      if (!isVerifyingTriggered) {
+        isVerifyingTriggered = true;
+        if (onVerify) {
+          onVerify();
+        }
+      }
+    };
+
+    // Real-time listener for esptool-js internal (100%) log output and verify notifications
+    const unsubscribeLogger = logger.subscribe((entry) => {
+      if (entry && entry.message) {
+        const msg = String(entry.message);
+        if (
+          msg.includes("(100%)") || 
+          msg.includes("Verifying") || 
+          msg.includes("Hash of") || 
+          msg.includes("Leaving...") ||
+          msg.includes("MD5")
+        ) {
+          // Delay by a microtask so that the (100%) esptool log line is appended to console first
+          setTimeout(() => {
+            triggerVerifyOnce();
+          }, 0);
+        }
+      }
+    });
 
     const options = {
       fileArray: [
@@ -35,14 +65,18 @@ export const flasher = {
       eraseAll: false,   // Do not erase whole chip (only erase region to write)
       compress: true,    // Use compression for faster transfer
       reportProgress: (fileIndex, written, total) => {
-        if (onProgress) {
+        if (!isVerifyingTriggered && onProgress) {
           onProgress(written, total);
+        }
+        if (total > 0 && written >= total) {
+          setTimeout(triggerVerifyOnce, 0);
         }
       }
     };
 
     try {
       await esploader.writeFlash(options);
+      triggerVerifyOnce();
       logger.log(`Success: Flashed and verified memory region at ${address}.`);
     } catch (error) {
       logger.error(`Flashing failed at address ${address}: ${error.message}`);
@@ -52,6 +86,10 @@ export const flasher = {
         throw new Error(`Checksum Error: Flash verification failed for address ${address}. The memory write might have been corrupted.`);
       }
       throw error;
+    } finally {
+      if (typeof unsubscribeLogger === "function") {
+        unsubscribeLogger();
+      }
     }
   },
 
