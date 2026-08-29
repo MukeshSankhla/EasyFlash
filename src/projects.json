@@ -13,15 +13,28 @@
     "compatibleBoard": "ESP32-S3"
   },
   {
-    "id": "esp32-p4-pc-display",
-    "title": "ESP32-P4 Smart PC Display",
-    "description": "Smart PC cabinet display firmware for the FireBeetle 2 ESP32-P4.\n* Drives an 8.8\" IPS bar display at 1920×480 resolution\n* Supports SD card MJPEG video playback at up to 24 FPS\n* Designed for PC builds, dashboards, animations, system information, clocks, temperatures, and CPU/GPU monitoring\n* Uses the ESP32-P4 for standalone display and multimedia processing",
+    "id": "esp32-p4-animation-display",
+    "title": "ESP32-P4 PC Display — Animation Player",
+    "description": "Smart PC cabinet display firmware for the FireBeetle 2 ESP32-P4.\n* Drives an 8.8\" IPS bar display at 1920×480 resolution\n* Plays animation videos from an SD card using MJPEG playback\n* Supports smooth video playback at up to 24 FPS\n* Designed for animations and visual effects inside a PC cabinet\n* Uses the ESP32-P4 for standalone display and multimedia processing",
     "version": "v1.0.0",
-    "releaseDate": "2026",
+    "releaseDate": "Aug 2026",
     "coverImage": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/images/DIY.gif",
     "docLink": "https://www.hackster.io/Mukesh_Sankhla/build-a-smart-pc-display-with-esp32-p4-cad12c",
     "githubLink": "https://github.com/MukeshSankhla/ESP32_P4_DSI",
     "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/firmware/02_sd_mjpeg_player_merged.bin",
+    "flashAddress": "0x00",
+    "compatibleBoard": "FireBeetle 2 ESP32-P4"
+  },
+  {
+    "id": "esp32-p4-telemetry-hud",
+    "title": "ESP32-P4 PC Display — Telemetry HUD",
+    "description": "Smart PC cabinet display firmware for the FireBeetle 2 ESP32-P4.\n* Drives an 8.8\" IPS bar display at 1920×480 resolution\n* Plays animation videos from an SD card using MJPEG playback\n* Displays real-time telemetry and system information alongside animations\n* Designed for PC builds with CPU/GPU usage, temperatures, clocks, and custom dashboard data\n* Combines multimedia playback with a dynamic telemetry HUD\n* Uses the ESP32-P4 for standalone display and multimedia processing",
+    "version": "v1.0.0",
+    "releaseDate": "Aug 2026",
+    "coverImage": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/images/DIY.gif",
+    "docLink": "https://www.hackster.io/Mukesh_Sankhla/build-a-smart-pc-display-with-esp32-p4-cad12c",
+    "githubLink": "https://github.com/MukeshSankhla/ESP32_P4_DSI",
+    "firmwareUrl": "https://raw.githubusercontent.com/MukeshSankhla/ESP32_P4_DSI/main/firmware/03_sd_mjpeg_telemetry_hud_merged.bin",
     "flashAddress": "0x00",
     "compatibleBoard": "FireBeetle 2 ESP32-P4"
   }
