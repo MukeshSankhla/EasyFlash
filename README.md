@@ -154,7 +154,3 @@ Created with 💖 by **[Mukesh Sankhla](https://www.linkedin.com/in/mukeshsankhl
 - 🐙 **GitHub**: [@MukeshSankhla](https://github.com/MukeshSankhla)
 
 ---
-
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
